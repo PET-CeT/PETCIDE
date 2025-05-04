@@ -1,0 +1,44 @@
+/* Estilos personalizados para o SIGDEB */
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    flex: 1;
+}
+
+footer {
+    margin-top: auto;
+}
+
+/* Estilização para os cards na página inicial */
+.jumbotron {
+    padding: 2rem;
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+/* Melhorias na tabela de deliberações */
+.table th {
+    background-color: #f8f9fa;
+}
+
+/* Estilização para os resultados de similaridade */
+.texto-item {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.texto-item:hover {
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+/* Barra de progresso para similaridade */
+.progress-similaridade {
+    height: 8px;
+    margin-top: 10px;
+}

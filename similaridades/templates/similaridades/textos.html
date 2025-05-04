@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+
+{% block title %}SIGDEB - Deliberações{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Gerenciamento de Deliberações</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+        <i class="bi bi-upload"></i> Upload CSV
+    </button>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Filtros</h5>
+        <form id="filtroForm" class="row g-3">
+            <div class="col-md-4">
+                <label for="ano" class="form-label">Ano</label>
+                <input type="number" class="form-control" id="ano" name="ano">
+            </div>
+            <div class="col-md-6">
+                <label for="evento" class="form-label">Evento</label>
+                <input type="text" class="form-control" id="evento" name="evento">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabela de deliberações -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped" id="tabelaDeliberacoes">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Evento</th>
+                        <th>Ano</th>
+                        <th>Descrição</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Dados serão carregados aqui via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginação -->
+        <nav aria-label="Navegação de página">
+            <ul class="pagination justify-content-center" id="paginacao">
+                <!-- Paginação será gerada aqui via JavaScript -->
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Modal Upload CSV -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadModalLabel">Upload de Deliberações (CSV)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="csvFile" class="form-label">Arquivo CSV</label>
+                        <input class="form-control" type="file" id="csvFile" name="file" accept=".csv">
+                        <div class="form-text">
+                            O arquivo deve ter as colunas: evento, descricao, ano
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary" id="btnUpload">Enviar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Visualizar/Editar -->
+<div class="modal fade" id="eventoModal" tabindex="-1" aria-labelledby="eventoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventoModalLabel">Detalhes da Deliberação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <form id="eventoForm">
+                    <input type="hidden" id="eventoId">
+                    <div class="mb-3">
+                        <label for="eventoNome" class="form-label">Evento</label>
+                        <input type="text" class="form-control" id="eventoNome" name="evento">
+                    </div>
+                    <div class="mb-3">
+                        <label for="eventoAno" class="form-label">Ano</label>
+                        <input type="number" class="form-control" id="eventoAno" name="ano">
+                    </div>
+                    <div class="mb-3">
+                        <label for="eventoDescricao" class="form-label">Descrição</label>
+                        <textarea class="form-control" id="eventoDescricao" name="descricao" rows="5"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary" id="btnSalvar">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Variáveis globais
+    let currentPage = 1;
+    let totalPages = 1;
+
+    // Carregar deliberações ao carregar a página
+    document.addEventListener('DOMContentLoaded', function () {
+        carregarDeliberacoes();
+
+        // Configurar evento de envio do formulário de filtro
+        document.getElementById('filtroForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            currentPage = 1;
+            carregarDeliberacoes();
+        });
+
+        // Configurar evento de upload CSV
+        document.getElementById('btnUpload').addEventListener('click', uploadCSV);
+
+        // Configurar evento para salvar evento
+        document.getElementById('btnSalvar').addEventListener('click', salvarEvento);
+    });
+
+    // Função para carregar deliberações com filtros e paginação
+    function carregarDeliberacoes() {
+        const ano = document.getElementById('ano').value;
+        const evento = document.getElementById('evento').value;
+
+        let url = `/api/eventos/?page=${currentPage}`;
+        if (ano) url += `&ano=${ano}`;
+        if (evento) url += `&evento=${evento}`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.results);
+                renderizarDeliberacoes(data.results);
+                renderizarPaginacao(data.current_page, data.pages);
+                totalPages = data.pages;
+            })
+            .catch(error => {
+                console.error('Erro ao carregar deliberações:', error);
+                alert('Erro ao carregar deliberações. Tente novamente mais tarde.');
+            });
+    }
+
+    // Renderizar tabela de deliberações
+    function renderizarDeliberacoes(deliberacoes) {
+        const tbody = document.querySelector('#tabelaDeliberacoes tbody');
+        tbody.innerHTML = '';
+
+        if (deliberacoes.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center">Nenhuma deliberação encontrada</td>
+                </tr>
+            `;
+            return;
+        }
+
+        deliberacoes.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${item.id}</td>
+                <td>${item.evento}</td>
+                <td>${item.ano}</td>
+                <td>${item.descricao?.substring(0, 100) || ''}${item.descricao?.length > 100 ? '...' : ''}</td>
+                <td>
+                    <button class="btn btn-sm btn-info me-1" onclick="visualizarEvento(${item.id})">
+                        Ver
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="excluirEvento(${item.id})">
+                        Excluir
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // Renderizar paginação
+    function renderizarPaginacao(currentPage, totalPages) {
+        const paginacao = document.getElementById('paginacao');
+        paginacao.innerHTML = '';
+
+        // Botão Anterior
+        const prevLi = document.createElement('li');
+        prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `
+            <a class="page-link" href="#" onclick="mudarPagina(${currentPage - 1})">Anterior</a>
+        `;
+        paginacao.appendChild(prevLi);
+
+        // Páginas numeradas
+        for (let i = 1; i <= totalPages; i++) {
+            const li = document.createElement('li');
+            li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+            li.innerHTML = `
+                <a class="page-link" href="#" onclick="mudarPagina(${i})">${i}</a>
+            `;
+            paginacao.appendChild(li);
+        }
+
+        // Botão Próximo
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+        nextLi.innerHTML = `
+            <a class="page-link" href="#" onclick="mudarPagina(${currentPage + 1})">Próximo</a>
+        `;
+        paginacao.appendChild(nextLi);
+    }
+
+    // Mudar página
+    function mudarPagina(pagina) {
+        if (pagina < 1 || pagina > totalPages) return;
+        currentPage = pagina;
+        carregarDeliberacoes();
+    }
+
+    // Upload de CSV
+    function uploadCSV() {
+        const formData = new FormData(document.getElementById('uploadForm'));
+
+        // Usar authenticatedFetch em vez de fetch regular
+        authenticatedFetch('/api/eventos/', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.success);
+                    carregarDeliberacoes();
+
+                    // Fechar modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
+                    modal.hide();
+
+                    // Limpar formulário
+                    document.getElementById('uploadForm').reset();
+                } else {
+                    alert(data.error || 'Erro ao fazer upload do arquivo.');
+                }
+            })
+            .catch(error => {
+                if (error === 'Usuário não autenticado') {
+                    alert('Você precisa estar logado para realizar esta operação.');
+                } else {
+                    console.error('Erro ao fazer upload:', error);
+                    alert('Erro ao fazer upload do arquivo. Tente novamente mais tarde.');
+                }
+            });
+    }
+
+    // Visualizar/Editar evento
+    function visualizarEvento(id) {
+        fetch(`/api/eventos/${id}/`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('eventoId').value = data.id;
+                document.getElementById('eventoNome').value = data.evento;
+                document.getElementById('eventoAno').value = data.ano;
+                document.getElementById('eventoDescricao').value = data.descricao;
+
+                // Abrir modal
+                const modal = new bootstrap.Modal(document.getElementById('eventoModal'));
+                modal.show();
+            })
+            .catch(error => {
+                console.error('Erro ao carregar detalhes do evento:', error);
+                alert('Erro ao carregar detalhes do evento. Tente novamente mais tarde.');
+            });
+    }
+
+    // Salvar evento
+    function salvarEvento() {
+        const id = document.getElementById('eventoId').value;
+        const dados = {
+            evento: document.getElementById('eventoNome').value,
+            ano: document.getElementById('eventoAno').value,
+            descricao: document.getElementById('eventoDescricao').value
+        };
+
+        fetch(`/api/eventos/${id}/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(dados)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    alert('Evento atualizado com sucesso!');
+                    carregarDeliberacoes();
+
+                    // Fechar modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('eventoModal'));
+                    modal.hide();
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao atualizar evento:', error);
+                alert('Erro ao atualizar evento. Tente novamente mais tarde.');
+            });
+    }
+
+    // Excluir evento
+    function excluirEvento(id) {
+        if (!confirm('Tem certeza que deseja excluir esta deliberação?')) return;
+
+        const token = localStorage.getItem('authToken');
+
+        if (!token){
+            alert('Você precisa estar logado para realizar esta operação.');
+            window.location.href = '/login/';
+            return;
+        }
+
+        fetch(`/api/eventos/${id}/`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Authorization': `Token ${token}`
+            }
+        })
+            .then(response => {
+                if (response.status === 204) {
+                    alert('Evento excluído com sucesso!');
+                    carregarDeliberacoes();
+                } else {
+                    return response.json();
+                }
+            })
+            .then(data => {
+                if (data && data.error) {
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao excluir evento:', error);
+                alert('Erro ao excluir evento. Tente novamente mais tarde.');
+            });
+    }
+</script>
+{% endblock %}

@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,10 +41,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     'drf_spectacular',
+    'users',
     'similaridades',
     
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -61,7 +64,11 @@ ROOT_URLCONF = 'app.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates'),
+            os.path.join(BASE_DIR, 'similaridades', 'templates'),
+            os.path.join(BASE_DIR, 'users', 'templates'),
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -122,7 +129,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -132,6 +141,7 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     ),
 }
 
@@ -139,3 +149,14 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
 }
+
+# NOTA AOS CURIOSOS QUE VIRAM ESSE CÓDIGO:
+# Esse projeto foi desenvolvido para tornar menos burocrático o processo de analise de deliberações
+# dos grupos PET UFAL inicialmente, mas a ideia é tornar o projeto mais complexo para tornar possível para
+# qualquer grupo PET Brasil e ter acesso a dados de deliberações de outros grupos PET.
+# O projeto ainda está em fase inicial, mas a ideia é que ele seja um sistema de recomendação de deliberações
+# para os grupos PET UFAL, onde o sistema irá analisar as deliberações passadas e recomendar deliberações
+# futuras com base nas deliberações passadas.
+# Esse projeto é open source e está disponível no github, então sinta-se a vontade para contribuir com o projeto.
+# O projeto foi desenvolvido por Gabriel Germano aluno de engenharia de computação da UFAL, esse projeto é meu protesto contra a demora
+# que algumas assembleias tem sido ao longo da minha jornada nesse programa. Espero poder ajudar outros alunos a não passarem pelo mesmo problema que eu passei.

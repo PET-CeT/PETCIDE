@@ -1,11 +1,17 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
-from django.contrib.auth.password_validation import validate_password
+from .models import TextoEvento
 
 class TextoInputSerializer(serializers.Serializer):
-    descricao = serializers.CharField()
-    evento = serializers.CharField()
-    ano = serializers.IntegerField()
+    class Meta:
+        model = TextoEvento
+        fields = ['id', 'descricao', 'evento', 'ano']
+        extra_kwargs = {
+            'id': {'read_only': True},
+            'descricao': {'required': True},
+            'evento': {'required': True},
+            'ano': {'required': True}
+        }
+
 
 class SimilaridadeOutputSerializer(serializers.Serializer):
     texto_base = serializers.CharField()
@@ -14,7 +20,13 @@ class SimilaridadeOutputSerializer(serializers.Serializer):
     evento_mais_semelhante = serializers.CharField()
     similaridade = serializers.FloatField()
     
-class TextEventSerializer(serializers.Serializer):
-    texto = serializers.CharField()
-    evento = serializers.CharField()
-    ano = serializers.IntegerField()
+class TextEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TextoEvento
+        fields = ['id','descricao', 'evento', 'ano']
+        extra_kwargs = {
+            'id': {'read_only': True},
+            'descricao': {'required': True},
+            'evento': {'required': True},
+            'ano': {'required': True}
+        }

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Meu Perfil - SIGDEB{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Meu Perfil</h4>
+            </div>
+            <div class="card-body">
+                <div id="profileData">
+                    <div class="mb-3">
+                        <label class="form-label">Nome de usuário</label>
+                        <input type="text" class="form-control" id="username" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" readonly>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Carregar dados do usuário do localStorage
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        if (user && user.username) {
+            document.getElementById('username').value = user.username;
+            document.getElementById('email').value = user.email || '';
+        } else {
+            // Redirecionar para login se não estiver autenticado
+            window.location.href = '{% url "login" %}';
+        }
+    });
+</script>
+{% endblock %}
