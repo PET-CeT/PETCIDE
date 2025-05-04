@@ -214,12 +214,50 @@
         `;
         paginacao.appendChild(prevLi);
 
+        const maxPagesToShow = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+        if (endPage - startPage < maxPagesToShow - 1) {
+            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+
+        if (startPage > 1) {
+            const li = document.createElement('li');
+            li.className = 'page-item';
+            li.innerHTML = `
+                <a class="page-link" href="#" onclick="mudarPagina(1)">1</a>
+            `;
+            paginacao.appendChild(li);
+            if (startPage > 2) {
+                const ellipsisLi = document.createElement('li');
+                ellipsisLi.className = 'page-item disabled';
+                ellipsisLi.innerHTML = `<span class="page-link">...</span>`;
+                paginacao.appendChild(ellipsisLi);
+            }
+        }
+
         // Páginas numeradas
-        for (let i = 1; i <= totalPages; i++) {
+        for (let i = startPage; i <= endPage; i++) {
             const li = document.createElement('li');
             li.className = `page-item ${i === currentPage ? 'active' : ''}`;
             li.innerHTML = `
                 <a class="page-link" href="#" onclick="mudarPagina(${i})">${i}</a>
+            `;
+            paginacao.appendChild(li);
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                const ellipsisLi = document.createElement('li');
+                ellipsisLi.className = 'page-item disabled';
+                ellipsisLi.innerHTML = `<span class="page-link">...</span>`;
+                paginacao.appendChild(ellipsisLi);
+            }
+            const li = document.createElement('li');
+            li.className = 'page-item';
+            li.innerHTML = `
+                <a class="page-link" href="#" onclick="mudarPagina(${totalPages})">${totalPages}</a>
             `;
             paginacao.appendChild(li);
         }
