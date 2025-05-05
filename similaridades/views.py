@@ -4,23 +4,27 @@ import numpy as np
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
+import nltk
 from nltk.tokenize import word_tokenize
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.generics import CreateAPIView
 
 from django.core.paginator import Paginator
-from django.contrib.auth.models import User
 
 from .models import TextoEvento
-from .serializers import TextoInputSerializer, TextEventSerializer
+from .serializers import TextoInputSerializer, TextEventSerializer, SimilaridadeOutputSerializer
 from io import StringIO
 
+from drf_spectacular.utils import extend_schema, OpenApiExample
 
 class SimilaridadeView(APIView):
+    queryset = TextoEvento.objects.all()
+    serializer_class = TextoInputSerializer
+    permission_classes = [AllowAny]
+
     def get(self, request):
         return Response(
             {
@@ -39,7 +43,12 @@ class SimilaridadeView(APIView):
         )
 
     def post(self, request):
+        """
+        Recebe uma lista de textos e eventos, calcula a similaridade entre eles
+        e retorna os textos mais semelhantes, excluindo textos do mesmo ano.
+        """
         serializer = TextoInputSerializer(data=request.data, many=True)
+
         if serializer.is_valid():
             data = serializer.validated_data
             new_df = pd.DataFrame(data)
@@ -49,38 +58,39 @@ class SimilaridadeView(APIView):
             )
             db_df = pd.DataFrame(list(textos_banco))
 
+            # Marcando a origem dos textos
             if not db_df.empty:
                 new_df["origem"] = "requisicao"
                 db_df["origem"] = "banco"
-
                 combined_df = pd.concat([new_df, db_df], ignore_index=True)
             else:
                 combined_df = new_df.copy()
                 combined_df["origem"] = "requisicao"
-
-            combined_df["descricao"] = combined_df["descricao"].apply(
-                lambda x: word_tokenize(x.lower())
+            
+            # Salvar uma cópia dos textos originais antes do processamento
+            textos_originais = combined_df["descricao"].copy()
+            eventos_originais = combined_df["evento"].copy()
+            
+            # Processamento de texto para análise
+            combined_df["descricao_processada"] = combined_df["descricao"].apply(
+                lambda x: word_tokenize(str(x).lower())
             )
-            combined_df["descricao"] = combined_df["descricao"].apply(
+            combined_df["descricao_processada"] = combined_df["descricao_processada"].apply(
                 lambda x: [word for word in x if word.isalnum()]
             )
 
             # Transformar para o formato adequado para o TF-IDF
-            results = combined_df["descricao"].apply(lambda x: " ".join(map(str, x)))
+            results = combined_df["descricao_processada"].apply(lambda x: " ".join(map(str, x)))
             vectorizer = TfidfVectorizer()
             tfidf_matrix = vectorizer.fit_transform(results)
 
             saida = []
-
-            indices_requisicao = combined_df[
-                combined_df["origem"] == "requisicao"
-            ].index
+            indices_requisicao = combined_df[combined_df["origem"] == "requisicao"].index
 
             for idx in indices_requisicao:
                 try:
-                    ano_evento = re.search(
-                        r"\d{4}", combined_df["evento"].iloc[idx]
-                    ).group()[:4]
+                    evento_str = str(combined_df["evento"].iloc[idx])
+                    ano_evento = re.search(r"\d{4}", evento_str).group()[:4]
                 except AttributeError:
                     ano_evento = None
 
@@ -90,37 +100,33 @@ class SimilaridadeView(APIView):
 
                 # Filtrar textos do mesmo ano
                 for j in range(len(combined_df)):
-                    if ano_evento and re.search(
-                        r"\d{4}", combined_df["evento"].iloc[j]
-                    ):
-                        if (
-                            re.search(r"\d{4}", combined_df["evento"].iloc[j]).group()[
-                                :4
-                            ]
-                            == ano_evento
-                        ):
-                            similaridade_linear[j] = 0
+                    try:
+                        if ano_evento:
+                            evento_str_j = str(combined_df["evento"].iloc[j])
+                            match = re.search(r"\d{4}", evento_str_j)
+                            if match and match.group()[:4] == ano_evento:
+                                similaridade_linear[j] = 0
+                    except (AttributeError, TypeError):
+                        pass
 
                 # Não comparar o texto consigo mesmo
                 similaridade_linear[idx] = 0
 
                 most_similar = np.argmax(similaridade_linear)
                 most_similar_value = float(similaridade_linear[most_similar])
+                
+                # Verificar e substituir valores NaN
+                if np.isnan(most_similar_value):
+                    most_similar_value = 0.0
 
                 saida.append(
                     {
-                        "texto_base": combined_df["descricao"].iloc[idx],
-                        "evento_base": combined_df["evento"].iloc[idx],
-                        "texto_mais_semelhante": combined_df["descricao"].iloc[
-                            most_similar
-                        ],
-                        "evento_mais_semelhante": combined_df["evento"].iloc[
-                            most_similar
-                        ],
-                        "origem_texto_similar": combined_df["origem"].iloc[
-                            most_similar
-                        ],
-                        "similaridade": most_similar_value,
+                        "texto_base": textos_originais.iloc[idx],
+                        "evento_base": eventos_originais.iloc[idx],
+                        "texto_mais_semelhante": textos_originais.iloc[most_similar],
+                        "evento_mais_semelhante": eventos_originais.iloc[most_similar],
+                        "origem_texto_similar": combined_df["origem"].iloc[most_similar],
+                        "similaridade": round(most_similar_value * 100, 2),  # Formato percentual para melhor visualização
                     }
                 )
 
@@ -173,8 +179,6 @@ class TextEventView(APIView):
 
         serializer = TextEventSerializer(eventos_paginados, many=True)
 
-        print("Modelo raw data:", list(eventos_paginados))
-        print("Serializer data:", serializer.data)
 
         return Response(
             {
@@ -203,8 +207,6 @@ class TextEventView(APIView):
         try:
             file_data = csv_file.read().decode("utf-8")
             df = pd.read_csv(StringIO(file_data))
-
-            print(df.head())  # Debug: Verifique os dados lidos do CSV
 
             required_columns = ["evento", "descricao", "ano"]
             for col in required_columns:

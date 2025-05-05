@@ -1,0 +1,10 @@
+Django==5.2
+djangorestframework==3.16.0
+djangorestframework_simplejwt==5.5.0
+drf-spectacular==0.28.0
+nltk==3.9.1
+numpy==2.2.5
+pandas==2.2.3
+PyJWT==2.9.0
+scikit-learn==1.6.1
+scipy==1.15.2

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}SIGDEB - Análise de Similaridade{% endblock %}
+{% block title %}PETCIDE - Análise de Similaridade{% endblock %}
 
 {% block content %}
 <h2 class="mb-4">Análise de Similaridade de Textos</h2>
@@ -29,7 +29,7 @@
                 <button type="button" id="btnAddTexto" class="btn btn-secondary">
                     <i class="bi bi-plus-circle"></i> Adicionar Outro Texto
                 </button>
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" class="btn btn-dark">
                     <i class="bi bi-search"></i> Analisar Similaridade
                 </button>
             </div>
@@ -124,31 +124,40 @@
         container.innerHTML = '';
 
         resultados.forEach(resultado => {
-            const similaridadePercent = Math.round(resultado.similaridade * 100);
+            // Verificar se similaridade existe e não é NaN
+            const similaridadePercent = resultado.similaridade ?
+                Math.round(resultado.similaridade) : 0;
 
+            // Criar o elemento card
             const card = document.createElement('div');
             card.className = 'col-md-6 mb-4';
             card.innerHTML = `
-                <div class="card h-100">
-                    <div class="card-header">
-                        <h5>${resultado.evento_base}</h5>
-                    </div>
-                    <div class="card-body">
-                        <h6>Texto Base:</h6>
-                        <p>${resultado.texto_base.join(' ')}</p>
-                        
-                        <hr>
-                        
-                        <h6>Texto Mais Similar (${similaridadePercent}% de similaridade):</h6>
-                        <p>${resultado.texto_mais_semelhante.join(' ')}</p>
-                        
-                        <div class="mt-3">
-                            <strong>Evento:</strong> ${resultado.evento_mais_semelhante}<br>
-                            <strong>Origem:</strong> ${resultado.origem_texto_similar === 'banco' ? 'Base de Dados' : 'Atual Requisição'}
-                        </div>
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5>${resultado.evento_base}</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Texto Base:</h6>
+                    <p>${Array.isArray(resultado.texto_base) ?
+                    resultado.texto_base.join(' ') :
+                    resultado.texto_base}</p>
+                    
+                    <hr>
+                    
+                    <h6>Texto Mais Similar (${similaridadePercent}% de similaridade):</h6>
+                    <p>${Array.isArray(resultado.texto_mais_semelhante) ?
+                    resultado.texto_mais_semelhante.join(' ') :
+                    resultado.texto_mais_semelhante}</p>
+                    
+                    <div class="mt-3">
+                        <strong>Evento:</strong> ${resultado.evento_mais_semelhante}<br>
+                        <strong>Origem:</strong> ${resultado.origem_texto_similar === 'banco' ?
+                    'Base de Dados' :
+                    'Atual Requisição'}
                     </div>
                 </div>
-            `;
+            </div>
+        `;
             container.appendChild(card);
         });
 

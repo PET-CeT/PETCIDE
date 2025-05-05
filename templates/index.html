@@ -1,20 +1,21 @@
 {% extends 'base.html' %}
 
-{% block title %}SIGDEB - Home{% endblock %}
+{% block title %}PETCIDE - Home{% endblock %}
 
 {% block content %}
 <div class="jumbotron">
-    <h1 class="display-4">Bem-vindo ao SIGDEB</h1>
-    <p class="lead">Sistema de Gestão de Deliberações com análise de similaridade.</p>
+    <h1 class="display-4">Bem-vindo ao PETCIDE</h1>
+    <p class="lead">PET + Collaborative Intelligent DEliberation</p>
+    <p class="text-muted">O nome PETCIDE é uma junção de PET (Programa de Educação Tutorial) com as iniciais de "Collaborative Intelligent DEliberation", refletindo o objetivo do sistema de facilitar e aprimorar a análise colaborativa e inteligente de deliberações.</p>
     <hr class="my-4">
-    <p>O SIGDEB é uma proposta de tornar mais fácil a análise de deliberações do PET.</p>
+    <p>O PETCIDE é uma proposta de tornar mais fácil a análise de deliberações do PET.</p>
     <div class="row mt-5">
         <div class="col-md-6">
             <div class="card mb-4">
                 <div class="card-body">
                     <h5 class="card-title">Gerenciar Deliberações</h5>
                     <p class="card-text">Visualize, adicione, edite e remova deliberações do sistema.</p>
-                    <a href="{% url 'textos' %}" class="btn btn-primary">Acessar Deliberações</a>
+                    <a href="{% url 'textos' %}" class="btn btn-dark">Acessar Deliberações</a>
                 </div>
             </div>
         </div>
@@ -23,7 +24,7 @@
                 <div class="card-body">
                     <h5 class="card-title">Análise de Similaridade</h5>
                     <p class="card-text">Compare textos para identificar deliberações similares.</p>
-                    <a href="{% url 'similaridade' %}" class="btn btn-primary">Analisar Similaridade</a>
+                    <a href="{% url 'similaridade' %}" class="btn btn-dark">Analisar Similaridade</a>
                 </div>
             </div>
         </div>
