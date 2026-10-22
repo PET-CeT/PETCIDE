@@ -1,0 +1,7 @@
+# Curadoria: PRs que mexem nestes caminhos exigem aprovação de quem está listado aqui
+# (com "Require review from Code Owners" ativo na proteção da branch main).
+# Para trocar o curador por um time: @PET-CeT/<nome-do-time>
+
+/data/      @Gabrielgermanoo
+/scripts/   @Gabrielgermanoo
+/.github/   @Gabrielgermanoo
