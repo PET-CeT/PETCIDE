@@ -143,9 +143,6 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
-# mkdocs documentation
-/site
-
 # mypy
 .mypy_cache/
 .dmypy.json
@@ -172,3 +169,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# PETCIDE: arquivos gerados (scripts/gerar_dados.py e tests/gerar_referencia.py)
+site/data/deliberacoes.json
+tests/referencia.json

@@ -1,0 +1,97 @@
+name: Deliberação aprovada
+
+# Quando um curador coloca a label "aprovada" numa issue "nova-deliberacao",
+# as deliberações da issue viram um PR que altera data/deliberacoes.csv.
+# Se a issue for editada, basta remover e recolocar a label para atualizar o PR.
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deliberacao-${{ github.event.issue.number }}
+
+jobs:
+  criar-pr:
+    if: >-
+      github.event.label.name == 'aprovada'
+      && contains(github.event.issue.labels.*.name, 'nova-deliberacao')
+      && github.event.issue.state == 'open'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ISSUE: ${{ github.event.issue.number }}
+      CURADOR: ${{ github.event.sender.login }}
+    steps:
+      # Triagem já permite colocar labels; aprovar exige permissão de escrita.
+      - name: Conferir permissão de quem aprovou
+        run: |
+          permissao=$(gh api "repos/$GITHUB_REPOSITORY/collaborators/$CURADOR/permission" --jq .permission)
+          if [ "$permissao" != "admin" ] && [ "$permissao" != "write" ]; then
+            gh issue edit "$ISSUE" --repo "$GITHUB_REPOSITORY" --remove-label aprovada
+            gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" \
+              --body "@$CURADOR, só pessoas com permissão de escrita no repositório podem aprovar deliberações."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Adicionar deliberações ao CSV
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          if ! python scripts/adicionar_deliberacao.py --resumo "$RUNNER_TEMP/resumo.md" 2> "$RUNNER_TEMP/erros.txt"; then
+            {
+              echo "Não foi possível adicionar estas deliberações:"
+              echo
+              cat "$RUNNER_TEMP/erros.txt"
+              echo
+              echo "Corrija a issue (editar → ajustar os campos) e peça para um curador recolocar a label \`aprovada\`."
+            } > "$RUNNER_TEMP/comentario.md"
+            gh issue comment "$ISSUE" --body-file "$RUNNER_TEMP/comentario.md"
+            gh issue edit "$ISSUE" --remove-label aprovada
+            exit 1
+          fi
+
+      - name: Criar ou atualizar o PR
+        run: |
+          ramo="deliberacao/issue-$ISSUE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$ramo"
+          git add data/deliberacoes.csv
+          git commit -m "data: adiciona deliberações da issue #$ISSUE" -m "Aprovado por @$CURADOR."
+          git push --force origin "$ramo"
+
+          {
+            cat "$RUNNER_TEMP/resumo.md"
+            echo
+            echo "Aprovado por @$CURADOR. Closes #$ISSUE"
+          } > "$RUNNER_TEMP/corpo.md"
+
+          if gh pr view "$ramo" --json state --jq .state 2>/dev/null | grep -q OPEN; then
+            gh pr edit "$ramo" --body-file "$RUNNER_TEMP/corpo.md"
+          else
+            gh pr create --base main --head "$ramo" \
+              --title "Deliberações da issue #$ISSUE" --body-file "$RUNNER_TEMP/corpo.md"
+          fi
+
+          # PRs abertos com o GITHUB_TOKEN não disparam o evento pull_request;
+          # roda a verificação do site manualmente no ramo para o PR ter o check.
+          gh workflow run pages.yml --ref "$ramo"
+
+          url=$(gh pr view "$ramo" --json url --jq .url)
+          gh issue comment "$ISSUE" --body "Aprovado por @$CURADOR. PR com as deliberações: $url"

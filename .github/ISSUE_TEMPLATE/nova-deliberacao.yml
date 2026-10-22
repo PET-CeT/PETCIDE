@@ -1,0 +1,73 @@
+name: Sugerir deliberação
+description: Envie deliberações de um encontro PET para entrar na base do PETCIDE.
+title: "[Deliberação] "
+labels: ["nova-deliberacao"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por contribuir! Depois de enviada, a sugestão é revisada por um curador.
+        Quando aprovada, um Pull Request é criado automaticamente e, após o merge, ela aparece no site.
+
+  - type: dropdown
+    id: encontro
+    attributes:
+      label: Encontro
+      options:
+        - ENAPET
+        - ENEPET
+        - InterPET
+        - Outro
+    validations:
+      required: true
+
+  - type: input
+    id: outro_encontro
+    attributes:
+      label: Nome do encontro (se escolheu Outro)
+      placeholder: "Ex.: SulPET"
+
+  - type: input
+    id: ano
+    attributes:
+      label: Ano
+      placeholder: "Ex.: 2024"
+    validations:
+      required: true
+
+  - type: input
+    id: grupo
+    attributes:
+      label: Grupo de discussão ou espaço
+      description: Como aparece na ata. Vira o início do nome do evento, ex. "GDT 3 - ENAPET 2024".
+      placeholder: "Ex.: GDT 3, Encontro de Tutores, Encaminhamentos"
+    validations:
+      required: true
+
+  - type: textarea
+    id: deliberacoes
+    attributes:
+      label: Deliberações
+      description: |
+        Texto de cada deliberação, como na ata. Para enviar várias do mesmo grupo,
+        separe-as com uma linha contendo apenas `---`.
+      placeholder: |
+        Que os grupos PET promovam ...
+        ---
+        Que a CENAPET ...
+    validations:
+      required: true
+
+  - type: input
+    id: fonte
+    attributes:
+      label: Fonte (opcional)
+      description: Link para a ata ou documento de onde as deliberações foram tiradas. Ajuda na revisão.
+
+  - type: checkboxes
+    id: confirmacao
+    attributes:
+      label: Confirmação
+      options:
+        - label: Os textos foram copiados da ata oficial do encontro, sem alterações de conteúdo.
+          required: true

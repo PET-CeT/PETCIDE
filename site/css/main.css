@@ -1,0 +1,65 @@
+/* Estilos personalizados do PETCIDE */
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main.container {
+    flex: 1;
+}
+
+.jumbotron {
+    padding: 2rem;
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.table th {
+    background-color: #f8f9fa;
+}
+
+.texto-item {
+    position: relative;
+    transition: box-shadow 0.3s ease;
+}
+
+.texto-item:hover {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.progress-similaridade {
+    height: 8px;
+}
+
+.texto-longo {
+    white-space: pre-line;
+}
+
+.pagination .page-link {
+    color: #000;
+    background-color: #fff;
+    border-color: #dee2e6;
+}
+
+.pagination .page-item.active .page-link {
+    color: #fff;
+    background-color: #000;
+    border-color: #000;
+}
+
+.pagination .page-link:hover,
+.pagination .page-link:focus {
+    color: #000;
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+    box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0.25);
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    background-color: #fff;
+    border-color: #dee2e6;
+}
