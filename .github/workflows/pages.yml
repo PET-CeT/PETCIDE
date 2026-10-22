@@ -40,7 +40,7 @@ jobs:
           python tests/gerar_referencia.py
 
       - name: Testar similaridade (JS × scikit-learn)
-        run: node --test tests/
+        run: node --test tests/similaridade.test.mjs
 
       - uses: actions/upload-pages-artifact@v3
         with:

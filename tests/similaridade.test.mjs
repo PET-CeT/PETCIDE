@@ -1,5 +1,5 @@
 // Compara site/js/similaridade.js com a referência do scikit-learn.
-// Uso: python tests/gerar_referencia.py && node --test tests/
+// Uso: python tests/gerar_referencia.py && node --test tests/similaridade.test.mjs
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
