@@ -1,0 +1,61 @@
+name: Site (GitHub Pages)
+
+# PRs: valida o CSV e roda os testes. Push na main: faz o mesmo e publica.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validar data/deliberacoes.csv e gerar JSON
+        run: python scripts/gerar_dados.py
+
+      - name: Testar importação de deliberações via issue
+        run: python -m unittest discover tests
+
+      - name: Gerar referência com scikit-learn
+        run: |
+          pip install "scikit-learn>=1.5"
+          python tests/gerar_referencia.py
+
+      - name: Testar similaridade (JS × scikit-learn)
+        run: node --test tests/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  publicar:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: verificar
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
